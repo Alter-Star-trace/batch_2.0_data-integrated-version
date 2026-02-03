@@ -1,4 +1,5 @@
 # app.py
+import base64  # 顶部导入base64模块
 import streamlit as st
 from core_excel import process_excel_core
 import datetime
@@ -185,16 +186,18 @@ st.divider()
 st.subheader("📁 结果下载", divider="gray")
 if st.session_state.process_success and os.path.exists(st.session_state.save_path):
     # 读取结果文件为字节流，支持移动端下载
+
+
+    # 加固：将Excel文件转换为base64编码，强制指定下载格式
     with open(st.session_state.save_path, "rb") as f:
         result_bytes = f.read()
-    # 下载按钮（占满整行，移动端友好）
-    st.download_button(
-        label="点击下载处理结果Excel文件",
-        data=result_bytes,
-        file_name=result_filename,
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True
-    )
+        b64 = base64.b64encode(result_bytes).decode()
+
+    # 构建下载链接（强制Excel格式，避免浏览器误判）
+    href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="{result_filename}" style="display:block;width:100%;padding:12px 0;text-align:center;background-color:#0e1117;color:white;border-radius:8px;text-decoration:none;font-size:16px;">点击下载处理结果Excel文件</a>'
+
+    # 显示自定义下载按钮（替代原st.download_button，兼容性更强）
+    st.markdown(href, unsafe_allow_html=True)
     st.info(f"💡 结果文件同时保存在本地：{st.session_state.save_path}", icon="ℹ️")
 elif st.session_state.log_list and "处理失败" in st.session_state.log_list[-1]:
     st.error("❌ 处理失败，请查看上方日志排查问题！", icon="⚠️")
